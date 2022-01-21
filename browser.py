@@ -2,13 +2,51 @@ import ssl
 import socket
 import gzip
 import io
+import time
+
 from urllib.parse import urlparse
+from collections import namedtuple
+from threading import Timer, Lock
+
+"""
+MODELS
+"""
+# Declaring a lock to protect in-memory cache 
+CacheEntry = namedtuple("CacheEntry", "key path expires")
+
+# Stores cached pages entries
+CachedPagesEntries = {}
+
+# Cache the provided html page and cleanup cache when TTL expires
+def cache_entry(url, body, headers, ttl):
+    timer = Timer(expire_on, clean_up, ["url"], [url])
+
+    def clean_up(url):
+        if url in CachedPagesEntries:
+            del CachedPagesEntries[url]
+        timer.finished()
+
+    expire_on = time.time() + ttl
+    path = "/path/to/file" # TODO: prove actual path
+    CachedPagesEntries[url] = CacheEntry(url, path, expire_on)
+
+    timer.start()
 
 """
 SCHEME HANDLERS
 """
 def handle_http(scheme, host, path, only_view_source = False):
     r = None
+
+    # TODO: check for local cache (unless cache expired)
+    """
+    path = path[1:]
+    if has_page_in_cache(path):
+        body = ""
+        return show_html(path)
+    """
+
+    # check for cache if page already skip till 
     # init ipv4 basic tcp stream socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP) as s:
 
@@ -65,6 +103,17 @@ def handle_http(scheme, host, path, only_view_source = False):
         body = gzip.decompress(body)
 
     body = body.decode()
+
+    # cache or invalidate cache http response content if "cache-control" present in the headers
+    if "cache-control" in headers:
+        value = headers.get("cache-control")
+        if value == "no-store":
+            # make sure we have nothing in cache stored on this file
+            if url in CacheEntry:
+                del CacheEntry[url]
+        elif value.startswith("max-age"):
+            ttl = int(value.split(":")[-1])
+            cache_entry(url, body, headers, ttl)
 
     if only_view_source:
         print(body)

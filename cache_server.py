@@ -1,20 +1,32 @@
-from http import server
 from datetime import datetime
 import sys
+import http.server
 
-class CacheHandler(server.SimpleHTTPRequestHandler):
+HOST = "localhost"
+PORT = 8000
+
+class ProxyHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        print(self.path)
 
-        self.send_header("Cache-Content", "max-age=60")
+        if self.path.endswith("with_cache.html"):
+            self.send_header("Cache-Control", "max-age=30")
+        elif self.path.endswith("without_cache.html"):
+            self.send_header("Cache-Control", "no-store")
+        else:
+            raise Exception("No such resource on this server")
 
-        server.SimpleHTTPRequestHandler.do_GET(self)
+
+        http.server.SimpleHTTPRequestHandler.do_GET(self)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        raise Exception("port is required")
+    if len(sys.argv) > 1:
+        PORT = int(sys.argv[1])
 
-    port_number = int(sys.argv[1])
-    server.test(HandlerClass=CacheHandler, port=port_number)
+    server = http.server.HTTPServer((HOST, PORT), ProxyHandler)
 
-    print("listening on http://*:{}".format(port_number))
+    try:
+        server.serve_forever()
+        print("started server http://%s:%s" % (HOST, PORT))
+    except KeyboardInterrupt:
+        server.server_close()
+        print("shutdown server")
