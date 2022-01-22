@@ -9,7 +9,7 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
 
         if self.path.endswith("with_cache.html"):
-            self.send_header("Cache-Control", "max-age=30")
+            self.send_header("Cache-Control", "max-age=10")
         elif self.path.endswith("without_cache.html"):
             self.send_header("Cache-Control", "no-store")
         else:

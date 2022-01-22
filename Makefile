@@ -34,10 +34,10 @@ default_server:
 cached_file: cache_server
 	python3 ./browser.py http://localhost:8000/with_cache.html
 	# make sure "cached" folder does contain the cached file
-	if [[ ! -f ./.cache/with_cache.html ]] \then printf "expected \"with_cache.html\" file cached" >&2; exit 1
+	if [[ ! -f ./.cache/with_cache.html ]] \then printf "expected \"with_cache.html\" to stored in cache" >&2; exit 1
 	sleep 31
 	# after the timeout the cached file should have been removed
-	if [[ -f ./.cache/with_cache.html ]] \then printf "expected no \"with_cached.html\" file cached" >&2; exit 1
+	if [[ -f ./.cache/with_cache.html ]] \then printf "expected \"with_cached.html\" not to be stored in cache" >&2; exit 1
 	
 
 non_cached_file: cache_server
