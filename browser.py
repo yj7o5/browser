@@ -32,12 +32,12 @@ def handle_http(url, scheme, host, path, only_view_source = False):
         ctx = ssl.create_default_context()
         s = ctx.wrap_socket(s, server_hostname=host)
 
-        # connect to the resolve host/port
-        s.connect(resolve_host_port(scheme, host))
+      # connect to the resolve host/port
+      s.connect(resolve_host_port(scheme, host))
 
-        # prepare raw http request
-        s.send(create_request(host, path))
-        r = s.makefile("rb", newline="\r\n")
+      # prepare raw http request
+      s.send(create_request(host, path))
+      r = s.makefile("rb", newline="\r\n")
 
       # parse response status
       status_line = r.readline().decode()
@@ -52,11 +52,12 @@ def handle_http(url, scheme, host, path, only_view_source = False):
         loc = headers["location"]
         # same host and scheme as the original request being used
         if loc.startswith("/"):
-          handle_http(r.scheme, r.netloc, r.path)
+          # TODO: bug "loc" needs to be fully qualified URL
+          handle_http(loc, r.scheme, r.netloc, r.path)
         else:
           # otherwise extract the locations parts
-          r = urlparse(headers["location"])
-          handle_http(r.scheme, r.netloc, r.path)
+          r = urlparse(loc)
+          handle_http(loc, r.scheme, r.netloc, r.path)
           return
 
       # init the body to captured from network stream
@@ -120,12 +121,11 @@ def parse_headers(response):
   while True:
     line = response.readline().decode()
 
-    # exit out as line breaks marks the end of h
     if line == "\r\n": break
+
     header, value = line.split(":", 1)
     h[header.lower()] = value.strip()
-
-    return h
+  return h
 
 def add_request_header(r, header, value):
   r += "{}: {}\r\n".format(header, value)
